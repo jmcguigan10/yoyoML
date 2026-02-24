@@ -1,0 +1,10 @@
+app:
+  name: ExampleApp
+  version: 1.2.3
+features:
+  - ingest
+  - validate
+  - export
+thresholds:
+  warn: 0.7
+  fail: 0.9

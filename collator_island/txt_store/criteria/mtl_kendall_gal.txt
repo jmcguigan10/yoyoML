@@ -1,0 +1,70 @@
+
+class KendallGalMTLCriterion(Criterion):
+    """Kendall-Gal uncertainty-weighted multi-task loss.
+
+    Implements:
+        L = Σ_i ( exp(-s_i) * L_i + s_i )
+    """
+
+    def __init__(
+        self,
+        *,
+        task_losses: Dict[str, str],
+        weights: Optional[Dict[str, float]] = None,
+        label_smoothing: float = 0.0,
+        pos_weight: Optional[float] = None,
+        init_log_vars: Optional[Dict[str, float]] = None,
+    ):
+        super().__init__()
+        self.weights = weights or {}
+        init_log_vars = init_log_vars or {}
+        self.criteria = nn.ModuleDict(
+            {
+                task_name: make_single_task_criterion(
+                    loss_kind,
+                    label_smoothing=label_smoothing,
+                    pos_weight=pos_weight,
+                )
+                for task_name, loss_kind in task_losses.items()
+            }
+        )
+        self.log_vars = nn.ParameterDict(
+            {
+                task_name: nn.Parameter(torch.tensor(float(init_log_vars.get(task_name, 0.0))))
+                for task_name in task_losses
+            }
+        )
+
+    def compute_task_losses(
+        self,
+        outputs: Dict[str, torch.Tensor],
+        targets: Dict[str, torch.Tensor],
+    ) -> Dict[str, torch.Tensor]:
+        losses: Dict[str, torch.Tensor] = {}
+        for task_name, crit in self.criteria.items():
+            loss, _ = crit(outputs[task_name], targets[task_name])
+            losses[task_name] = loss
+        return losses
+
+    def combine_task_losses(
+        self, task_losses: Dict[str, torch.Tensor]
+    ) -> tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        device = next(iter(task_losses.values())).device if task_losses else torch.device("cpu")
+        total = torch.tensor(0.0, device=device)
+        metrics: Dict[str, torch.Tensor] = {}
+
+        for task_name, loss in task_losses.items():
+            s = self.log_vars[task_name]
+            w_unc = torch.exp(-s)
+            w_static = float(self.weights.get(task_name, 1.0))
+            total = total + w_static * (w_unc * loss + s)
+            metrics[f"loss_{task_name}"] = loss.detach()
+            metrics[f"log_var_{task_name}"] = s.detach()
+            metrics[f"w_unc_{task_name}"] = w_unc.detach()
+
+        metrics["loss"] = total.detach()
+        return total, metrics
+
+    def forward(self, outputs: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]):
+        return self.combine_task_losses(self.compute_task_losses(outputs, targets))
+

@@ -1,0 +1,17 @@
+
+@dataclass(frozen=True)
+class HeadSpec:
+    # linear: single linear layer
+    # mlp: MLP -> num_classes
+    # identity: returns features (no classifier)
+    kind: Literal["linear", "mlp", "identity"] = "linear"
+
+    hidden_dims: Sequence[int] = ()
+
+    use_dropout: bool = False
+    dropout_p: float = 0.0
+    activation: ActivationName = "relu"
+
+    # If True: Adaptive pooling to 1x1 before flatten, so input H/W can vary
+    use_global_pool: bool = True
+    global_pool: Literal["avg", "max"] = "avg"

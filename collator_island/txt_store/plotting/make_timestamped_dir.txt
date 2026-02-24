@@ -1,0 +1,9 @@
+
+def make_timestamped_dir(base_dir: Path) -> Path:
+    """Create and return a unique timestamped directory under `base_dir`."""
+    from datetime import datetime
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    out_dir = base_dir / ts
+    out_dir.mkdir(parents=True, exist_ok=False)
+    return out_dir
+

@@ -1,0 +1,12 @@
+
+def make_norm(name: NormName, channels: int, num_groups: int = 32) -> nn.Module:
+    if name == "none":
+        return nn.Identity()
+    if name == "batch":
+        return nn.BatchNorm2d(channels)
+    if name == "instance":
+        return nn.InstanceNorm2d(channels, affine=True)
+    if name == "group":
+        g = safe_num_groups(channels, num_groups)
+        return nn.GroupNorm(g, channels)
+    raise ValueError(f"Unknown norm: {name}")

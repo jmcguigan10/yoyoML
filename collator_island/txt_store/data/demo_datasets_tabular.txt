@@ -1,0 +1,20 @@
+class DemoTabularDataset(Dataset):
+    def __init__(self, input_dim: int, out_dim: int, *, task: str = "regression", length: int = 256):
+        self.input_dim = input_dim
+        self.out_dim = out_dim
+        self.task = task
+        self.length = length
+
+    def __len__(self) -> int:
+        return self.length
+
+    def __getitem__(self, idx: int):
+        x = torch.randn(self.input_dim)
+        if self.task == "multiclass":
+            y = torch.randint(0, max(self.out_dim, 2), (1,), dtype=torch.long).squeeze(0)
+        elif self.task == "binary":
+            y = torch.randint(0, 2, (1,), dtype=torch.float32).squeeze(0)
+        else:  # regression
+            shape = () if self.out_dim == 1 else (self.out_dim,)
+            y = torch.randn(shape)
+        return x, y

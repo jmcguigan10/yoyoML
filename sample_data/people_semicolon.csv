@@ -1,0 +1,26 @@
+id;name;age;height_cm;signup_date;is_active;score
+1;Alan Torvalds;43;182.5;2022-03-16;True;36.569
+2;Ada Liskov;31;151.9;2023-03-21;False;6.986
+3;Grace Liskov;45;153.0;2023-08-03;True;94.745
+4;Guido Lovelace;54;179.3;2022-02-20;True;4.658
+5;Linus Hamilton;44;157.2;2022-05-01;False;56.026
+6;Linus Hopper;55;178.6;2022-07-12;False;9.743
+7;Grace Rossum;21;181.0;2023-05-24;False;77.723
+8;Donald Rossum;47;168.1;2022-09-12;True;69.899
+9;Ken Hopper;54;165.0;2023-05-22;False;72.945
+10;Margaret Rossum;22;155.9;2023-03-05;True;75.714
+11;Linus Knuth;44;152.0;2023-11-16;True;76.457
+12;Guido Turing;39;184.8;2023-09-01;False;57.99
+13;Donald Hopper;23;197.2;2023-05-01;True;6.067
+14;Margaret Rossum;61;191.1;2022-10-19;False;88.704
+15;Alan Lovelace;47;167.8;2023-09-18;True;49.369
+16;Ken Hamilton;26;186.9;2023-02-12;False;91.682
+17;Donald Hopper;28;172.5;2023-07-17;False;88.338
+18;Edsger Liskov;35;185.3;2023-01-03;False;95.773
+19;Linus Hopper;29;157.6;2023-11-06;True;1.206
+20;Guido Torvalds;34;164.1;2022-05-30;False;53.459
+21;Guido Rossum;38;197.7;2023-12-09;True;45.664
+22;Barbara Dijkstra;43;169.9;2022-04-17;False;63.429
+23;Ada Thompson;22;199.2;2023-03-28;True;10.993
+24;Guido Lovelace;24;150.0;2022-06-04;True;94.895
+25;Guido Lovelace;22;193.7;2023-09-21;False;14.855

@@ -1,0 +1,3 @@
+ActivationName = Literal["relu", "leaky_relu", "gelu", "silu", "tanh", "sigmoid", "none"]
+NormName = Literal["batch", "group", "instance", "none"]
+PoolName = Literal["max", "avg", "none"]

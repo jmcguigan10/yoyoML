@@ -1,0 +1,44 @@
+from pathlib import Path
+
+import torch
+
+from config import PipelineConfig, find_pipeline_config, load_config
+from criterion import make_single_task_criterion
+from data import make_dataloader
+from model import VanillaCNN
+
+
+def main() -> None:
+    root = Path(__file__).resolve().parents[1]
+    cfg = load_config(find_pipeline_config(root), PipelineConfig)
+
+    model = VanillaCNN(
+        in_channels=cfg.model.in_channels,
+        num_classes=cfg.model.num_classes,
+        conv_blocks=cfg.model.conv_blocks,
+        head=cfg.model.head,
+        dropout2d=cfg.model.dropout2d,
+    )
+
+    criterion = make_single_task_criterion(
+        cfg.criterion.kind,
+        label_smoothing=cfg.criterion.label_smoothing,
+        pos_weight=cfg.criterion.pos_weight,
+    )
+
+    model.eval()
+    loader = make_dataloader(cfg, split="train")
+    x, y = next(iter(loader))
+
+    with torch.no_grad():
+        out = model(x)
+        loss, metrics = criterion(out, y)
+
+    print("Model:", type(model).__name__)
+    print("Output shape:", tuple(out.shape))
+    print("Loss:", float(loss))
+    print("Metrics:", {k: float(v) for k, v in metrics.items()})
+
+
+if __name__ == "__main__":
+    main()

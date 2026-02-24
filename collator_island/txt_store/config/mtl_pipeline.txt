@@ -1,0 +1,36 @@
+
+from model import MTLSpec, TaskSpec, BackboneMLPSpec
+
+
+@dataclass(frozen=True)
+class CriterionConfig:
+    kind: str = "weighted_mtl"
+    label_smoothing: float = 0.0
+    pos_weight: Optional[float] = None
+    weights: Dict[str, float] = field(default_factory=dict)
+    task_losses: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    spec: MTLSpec
+
+
+@dataclass(frozen=True)
+class PipelineConfig:
+    name: str
+    kind: Literal["mtl"] = "mtl"
+    enabled: bool = True
+    model: ModelConfig = field(
+        default_factory=lambda: ModelConfig(
+            spec=MTLSpec(
+                backbone_kind="mlp",
+                mlp_backbone=BackboneMLPSpec(input_dim=1),
+                tasks=(TaskSpec(name="y", kind="regression"),),
+            )
+        )
+    )
+    criterion: CriterionConfig = field(default_factory=CriterionConfig)
+    data: DataConfig = field(default_factory=DataConfig)
+    optim: OptimizerConfig = field(default_factory=OptimizerConfig)
+    train: TrainConfig = field(default_factory=TrainConfig)

@@ -1,0 +1,10 @@
+def find_pipeline_config(root: Path) -> Path:
+    candidates = [
+        root / "config" / "pipeline.toml",
+        root / "config" / "pipeline.yaml",
+        root / "config" / "pipeline.yml",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    raise FileNotFoundError("pipeline config not found (looked for pipeline.toml|yaml|yml)")

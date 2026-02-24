@@ -1,0 +1,57 @@
+
+T = TypeVar("T")
+
+
+def from_dict(cls: Type[T], data: Any) -> T:
+    """Minimal recursive dataclass loader.
+
+    Uses get_type_hints() so it works even with 'from __future__ import annotations'.
+    """
+    if data is None:
+        return data  # type: ignore[return-value]
+
+    origin = get_origin(cls)
+
+    # list-like
+    if origin in (list, List) or (
+        origin is not None
+        and getattr(origin, "__module__", "") == "collections.abc"
+        and getattr(origin, "__name__", "") in {"Sequence", "MutableSequence"}
+    ):
+        (inner,) = get_args(cls)
+        return [from_dict(inner, x) for x in data]  # type: ignore[return-value]
+
+    # tuple-like
+    if origin in (tuple, Tuple):
+        args = get_args(cls)
+        if len(args) == 2 and args[1] is Ellipsis:
+            # Tuple[T, ...]
+            inner = args[0]
+            return tuple(from_dict(inner, x) for x in data)  # type: ignore[return-value]
+        return tuple(from_dict(t, x) for t, x in zip(args, data))  # type: ignore[return-value]
+
+    if origin in (dict, Dict) or (
+        origin is not None
+        and getattr(origin, "__module__", "") == "collections.abc"
+        and getattr(origin, "__name__", "") in {"Mapping", "MutableMapping"}
+    ):
+        k_t, v_t = get_args(cls)
+        return {from_dict(k_t, k): from_dict(v_t, v) for k, v in data.items()}  # type: ignore[return-value]
+
+    if origin is Union:
+        # Optional[T] shows up as Union[T, NoneType]
+        args = [a for a in get_args(cls) if a is not type(None)]  # noqa: E721
+        if len(args) == 1:
+            return from_dict(args[0], data)
+
+    if hasattr(cls, "__dataclass_fields__"):
+        if not isinstance(data, dict):
+            raise TypeError(f"Expected dict for {cls}, got {type(data)}")
+        hints = get_type_hints(cls)
+        kwargs = {}
+        for name, t in hints.items():
+            if name in data:
+                kwargs[name] = from_dict(t, data[name])
+        return cls(**kwargs)  # type: ignore[return-value]
+
+    return data  # type: ignore[return-value]

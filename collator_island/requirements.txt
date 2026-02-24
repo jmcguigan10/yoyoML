@@ -1,0 +1,8 @@
+pyyaml>=6.0
+# TOML support on Python < 3.11 (Python 3.11+ uses tomllib from stdlib).
+tomli>=2.0; python_version < "3.11"
+
+# Optional add-ons used by generated pipelines if you opt into the features.
+numpy>=1.23
+matplotlib>=3.7
+# torch is needed to run the generated pipelines, but not to run the generator itself.

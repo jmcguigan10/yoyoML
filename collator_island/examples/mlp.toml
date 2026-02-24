@@ -1,0 +1,20 @@
+[[pipelines]]
+name = "mlp_binary"
+kind = "mlp"
+enabled = true
+
+[pipelines.model.spec]
+input_dim = 20
+out_dim = 1
+task_type = "binary"
+hidden_dims = [128, 64]
+activation = "relu"
+
+[pipelines.criterion]
+kind = "bce_with_logits"
+pos_weight = 1.0
+
+[pipelines.data]
+dataset_kind = "demo"
+modality = "tabular"
+batch_size = 64

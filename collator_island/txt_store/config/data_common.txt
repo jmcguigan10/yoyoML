@@ -1,0 +1,21 @@
+@dataclass(frozen=True)
+class DataConfig:
+    dataset_kind: Literal["demo", "custom"] = "demo"
+    modality: Literal["image", "tabular", "auto"] = "auto"
+    module: Optional[str] = None
+    class_name: Optional[str] = None
+    init_args: Dict[str, Any] = field(default_factory=dict)
+
+    batch_size: int = 32
+    num_workers: int = 0
+    shuffle: bool = True
+    pin_memory: bool = False
+    drop_last: bool = False
+
+    collate_module: Optional[str] = None
+    collate_fn: Optional[str] = None
+    image_size: int = 64
+    train_split: float = 0.8
+    val_split: float = 0.1
+    test_split: float = 0.1
+    split_seed: int = 42

@@ -1,0 +1,92 @@
+from pathlib import Path
+
+import torch
+
+from config import PipelineConfig, find_pipeline_config, load_config
+from criterion import make_single_task_criterion
+from data import make_dataloader
+from model import VanillaCNN
+
+
+def main() -> None:
+    root = Path(__file__).resolve().parents[1]
+    cfg = load_config(find_pipeline_config(root), PipelineConfig)
+
+    model = VanillaCNN(
+        in_channels=cfg.model.in_channels,
+        num_classes=cfg.model.num_classes,
+        conv_blocks=cfg.model.conv_blocks,
+        head=cfg.model.head,
+        dropout2d=cfg.model.dropout2d,
+    )
+    criterion = make_single_task_criterion(
+        cfg.criterion.kind,
+        label_smoothing=cfg.criterion.label_smoothing,
+        pos_weight=cfg.criterion.pos_weight,
+    )
+
+    optim_cfg = cfg.optim
+    if optim_cfg.kind == "adamw":
+        opt = torch.optim.AdamW(model.parameters(), lr=optim_cfg.lr, weight_decay=optim_cfg.weight_decay, betas=optim_cfg.betas)
+    elif optim_cfg.kind == "adam":
+        opt = torch.optim.Adam(model.parameters(), lr=optim_cfg.lr, weight_decay=optim_cfg.weight_decay, betas=optim_cfg.betas)
+    else:
+        opt = torch.optim.SGD(model.parameters(), lr=optim_cfg.lr, momentum=optim_cfg.momentum, weight_decay=optim_cfg.weight_decay)
+
+    train_cfg = cfg.train
+    train_loader = make_dataloader(cfg, split="train")
+    val_loader = make_dataloader(cfg, split="val")
+
+    best_val = float("inf")
+    patience = train_cfg.early_stop_patience
+    wait = 0
+
+    for epoch in range(train_cfg.max_epochs):
+        model.train()
+        for step, (x, y) in enumerate(train_loader):
+            opt.zero_grad(set_to_none=True)
+            out = model(x)
+            loss, _ = criterion(out, y)
+            loss.backward()
+            if train_cfg.max_grad_norm:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), train_cfg.max_grad_norm)
+            opt.step()
+            if step % train_cfg.log_every == 0:
+                print(f"epoch={epoch} step={step} loss={float(loss):.4f}")
+        # val
+        model.eval()
+        val_loss_total = 0.0
+        n = 0
+        with torch.no_grad():
+            for x, y in val_loader:
+                out = model(x)
+                val_loss, _ = criterion(out, y)
+                val_loss_total += float(val_loss) * x.shape[0]
+                n += x.shape[0]
+        val_loss_avg = val_loss_total / max(n, 1)
+        print(f"epoch={epoch} val_loss={val_loss_avg:.4f}")
+        if val_loss_avg + train_cfg.early_stop_min_delta < best_val:
+            best_val = val_loss_avg
+            wait = 0
+        else:
+            wait += 1
+            if patience is not None and wait >= patience:
+                print("Early stopping triggered.")
+                break
+
+    # test
+    test_loader = make_dataloader(cfg, split="test")
+    model.eval()
+    test_loss_total = 0.0
+    n = 0
+    with torch.no_grad():
+        for x, y in test_loader:
+            out = model(x)
+            t_loss, _ = criterion(out, y)
+            test_loss_total += float(t_loss) * x.shape[0]
+            n += x.shape[0]
+    print(f"test_loss={test_loss_total / max(n,1):.4f}")
+
+
+if __name__ == "__main__":
+    main()

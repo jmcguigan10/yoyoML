@@ -1,0 +1,14 @@
+
+@dataclass(frozen=True)
+class MLPSpec:
+    input_dim: int
+    out_dim: int
+    hidden_dims: Sequence[int] = ()
+    activation: ActivationName = "relu"
+
+    use_dropout: bool = False
+    dropout_p: float = 0.0
+
+    use_layer_norm: bool = False
+    use_batch_norm: bool = False
+    task_type: Literal["regression", "multiclass", "binary"] = "regression"

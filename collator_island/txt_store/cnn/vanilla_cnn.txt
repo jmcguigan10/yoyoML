@@ -1,0 +1,96 @@
+
+class VanillaCNN(nn.Module):
+    """Configurable CNN.
+
+    Input:  (N, C, H, W)
+    Output: logits (or features if head.kind="identity")
+
+    Use model(x, return_features=True) to also get flattened features.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: Optional[int],
+        conv_blocks: Sequence[ConvBlockSpec],
+        head: Optional[HeadSpec] = None,
+        *,
+        dropout2d: bool = True,
+    ):
+        super().__init__()
+        if not conv_blocks:
+            raise ValueError("conv_blocks must contain at least one ConvBlockSpec.")
+
+        self.in_channels = in_channels
+        self.num_classes = num_classes
+        self.conv_blocks_spec = list(conv_blocks)
+        self.head_spec = head if head is not None else HeadSpec()
+
+        layers: List[nn.Module] = []
+        c_in = in_channels
+        for spec in conv_blocks:
+            bias = spec.bias
+            if bias is None:
+                bias = (spec.norm == "none")
+
+            layers.append(
+                nn.Conv2d(
+                    in_channels=c_in,
+                    out_channels=spec.out_channels,
+                    kernel_size=spec.kernel_size,
+                    stride=spec.stride,
+                    padding=spec.padding,
+                    dilation=spec.dilation,
+                    groups=spec.groups,
+                    bias=bias,
+                )
+            )
+            layers.append(make_norm(spec.norm, spec.out_channels, spec.num_groups))
+            layers.append(make_activation(spec.activation))
+
+            if spec.use_dropout and spec.dropout_p > 0:
+                layers.append(
+                    nn.Dropout2d(spec.dropout_p) if dropout2d else nn.Dropout(spec.dropout_p)
+                )
+
+            if spec.pool != "none":
+                layers.append(make_pool(spec.pool, spec.pool_kernel, spec.pool_stride))
+
+            c_in = spec.out_channels
+
+        self.features = nn.Sequential(*layers)
+
+        self._uses_global_pool = bool(self.head_spec.use_global_pool)
+        if self._uses_global_pool:
+            self.global_pool = (
+                nn.AdaptiveAvgPool2d((1, 1))
+                if self.head_spec.global_pool == "avg"
+                else nn.AdaptiveMaxPool2d((1, 1))
+            )
+        else:
+            self.global_pool = nn.Identity()
+
+        self.flatten = nn.Flatten(1)
+
+        self.feature_dim: Optional[int] = c_in if self._uses_global_pool else None
+
+        self.head = build_head(
+            kind=self.head_spec.kind,
+            feature_dim=self.feature_dim,
+            num_classes=num_classes,
+            hidden_dims=self.head_spec.hidden_dims,
+            use_dropout=self.head_spec.use_dropout,
+            dropout_p=self.head_spec.dropout_p,
+            activation=self.head_spec.activation,
+        )
+
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.features(x)
+        x = self.global_pool(x)
+        x = self.flatten(x)
+        return x
+
+    def forward(self, x: torch.Tensor, *, return_features: bool = False):
+        feats = self.forward_features(x)
+        out = self.head(feats)
+        return (out, feats) if return_features else out

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local/contracts/probe_request_bundle.v1.schema.json",
+  "title": "Probe Request Bundle V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "loop_run_id",
+    "round_index",
+    "generated_at_utc",
+    "producer",
+    "source_hashes",
+    "summary",
+    "requests",
+    "stop_conditions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "probe_request_bundle.v1"
+    },
+    "run_id": {"type": "string", "minLength": 1},
+    "loop_run_id": {"type": "string", "minLength": 1},
+    "round_index": {"type": "integer", "minimum": 1},
+    "generated_at_utc": {"type": "string", "minLength": 1},
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diagnostic_bundle_hash", "recommendation_bundle_hash"],
+      "properties": {
+        "diagnostic_bundle_hash": {"type": "string", "minLength": 1},
+        "recommendation_bundle_hash": {"type": "string", "minLength": 1},
+        "prior_probe_result_hash": {"type": ["string", "null"]}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_count",
+        "dataset_count",
+        "priority_counts",
+        "estimated_budget"
+      ],
+      "properties": {
+        "request_count": {"type": "integer", "minimum": 0},
+        "dataset_count": {"type": "integer", "minimum": 0},
+        "priority_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["high", "medium", "low"],
+          "properties": {
+            "high": {"type": "integer", "minimum": 0},
+            "medium": {"type": "integer", "minimum": 0},
+            "low": {"type": "integer", "minimum": 0}
+          }
+        },
+        "estimated_budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_trials_total", "max_runtime_minutes"],
+          "properties": {
+            "max_trials_total": {"type": "integer", "minimum": 0},
+            "max_runtime_minutes": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "stop_conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_rounds", "max_total_probes", "min_confidence_gain"],
+      "properties": {
+        "max_rounds": {"type": "integer", "minimum": 1},
+        "max_total_probes": {"type": "integer", "minimum": 1},
+        "min_confidence_gain": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "requests": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/request"},
+      "default": []
+    }
+  },
+  "$defs": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "dataset_id",
+        "priority",
+        "reason",
+        "probe_kind",
+        "expected_signals",
+        "collator_request",
+        "budget"
+      ],
+      "properties": {
+        "request_id": {"type": "string", "minLength": 1},
+        "dataset_id": {"type": "string", "minLength": 1},
+        "priority": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "reason": {"type": "string", "minLength": 1},
+        "probe_kind": {
+          "type": "string",
+          "enum": [
+            "supervised_baseline_probe",
+            "split_sensitivity_probe",
+            "feature_redundancy_probe",
+            "missingness_impact_probe",
+            "unsupervised_structure_probe",
+            "uncertainty_resolution_probe"
+          ]
+        },
+        "expected_signals": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "collator_request": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["candidate_family", "intent", "hpo"],
+          "properties": {
+            "candidate_family": {"type": "string", "minLength": 1},
+            "intent": {"type": "object"},
+            "hpo": {"type": "object"}
+          }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_trials", "max_runtime_minutes"],
+          "properties": {
+            "max_trials": {"type": "integer", "minimum": 1},
+            "max_runtime_minutes": {"type": "integer", "minimum": 1}
+          }
+        }
+      }
+    }
+  }
+}

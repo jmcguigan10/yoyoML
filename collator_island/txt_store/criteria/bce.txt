@@ -1,0 +1,13 @@
+class BCEWithLogitsCriterion(Criterion):
+    def __init__(self, *, pos_weight: Optional[float] = None):
+        super().__init__()
+        pw = torch.tensor([pos_weight], dtype=torch.float32) if pos_weight is not None else None
+        self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=pw)
+
+    def forward(self, outputs: torch.Tensor, targets: torch.Tensor):
+        if outputs.ndim == 2 and outputs.shape[-1] == 1:
+            outputs = outputs.squeeze(-1)
+        if targets.ndim == 2 and targets.shape[-1] == 1:
+            targets = targets.squeeze(-1)
+        loss = self.loss_fn(outputs, targets)
+        return loss, {"loss": loss.detach()}

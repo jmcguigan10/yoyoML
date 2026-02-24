@@ -1,0 +1,61 @@
+
+TaskKind = Literal["binary", "multiclass", "regression"]
+BackboneKind = Literal["mlp", "cnn"]
+
+
+@dataclass(frozen=True)
+class TaskSpec:
+    name: str
+    kind: TaskKind
+    out_dim: Optional[int] = None
+    hidden_dims: Sequence[int] = ()
+
+
+@dataclass(frozen=True)
+class BackboneMLPSpec:
+    input_dim: int
+    hidden_dims: Sequence[int] = ()
+    activation: ActivationName = "relu"
+
+    use_layer_norm: bool = False
+    use_batch_norm: bool = False
+    use_dropout: bool = False
+    dropout_p: float = 0.0
+
+    # Optional: use e3nn as the very first layer (equivariant Linear).
+    # If enabled, `input_dim` must match o3.Irreps(e3nn_in_irreps).dim
+    # and the first hidden dim becomes o3.Irreps(e3nn_out_irreps).dim.
+    use_e3nn_first_layer: bool = False
+    e3nn_in_irreps: str = "1x0e"
+    e3nn_out_irreps: str = "16x0e"
+
+
+@dataclass(frozen=True)
+class BackboneCNNSpec:
+    in_channels: int
+    conv_blocks: Sequence[ConvBlockSpec]
+    use_global_pool: bool = True
+    global_pool: Literal["avg", "max"] = "avg"
+    image_size: int = 64
+
+
+@dataclass(frozen=True)
+class MTLSpec:
+    backbone_kind: BackboneKind
+    mlp_backbone: Optional[BackboneMLPSpec] = None
+    cnn_backbone: Optional[BackboneCNNSpec] = None
+
+    tasks: Sequence[TaskSpec] = ()
+
+    activation: ActivationName = "relu"
+
+    # shared/head regularization toggles
+    shared_use_layer_norm: bool = False
+    shared_use_batch_norm: bool = False
+    shared_use_dropout: bool = False
+    shared_dropout_p: float = 0.0
+
+    head_use_layer_norm: bool = False
+    head_use_batch_norm: bool = False
+    head_use_dropout: bool = False
+    head_dropout_p: float = 0.0

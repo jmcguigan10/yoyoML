@@ -1,0 +1,32 @@
+
+from model import ConvBlockSpec, HeadSpec
+
+
+@dataclass(frozen=True)
+class CriterionConfig:
+    kind: str = "cross_entropy"
+    label_smoothing: float = 0.0
+    pos_weight: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    in_channels: int
+    num_classes: Optional[int] = None
+    conv_blocks: List[ConvBlockSpec] = field(default_factory=list)
+    head: HeadSpec = field(default_factory=HeadSpec)
+    dropout2d: bool = True
+    image_size: int = 64
+    task_type: Literal["multiclass", "binary"] = "multiclass"
+
+
+@dataclass(frozen=True)
+class PipelineConfig:
+    name: str
+    kind: Literal["cnn"] = "cnn"
+    enabled: bool = True
+    model: ModelConfig = field(default_factory=lambda: ModelConfig(in_channels=3, num_classes=None))
+    criterion: CriterionConfig = field(default_factory=CriterionConfig)
+    data: DataConfig = field(default_factory=DataConfig)
+    optim: OptimizerConfig = field(default_factory=OptimizerConfig)
+    train: TrainConfig = field(default_factory=TrainConfig)

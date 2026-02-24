@@ -1,0 +1,26 @@
+
+from model import MLPSpec
+
+
+@dataclass(frozen=True)
+class CriterionConfig:
+    kind: str = "mse"
+    label_smoothing: float = 0.0
+    pos_weight: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    spec: MLPSpec
+
+
+@dataclass(frozen=True)
+class PipelineConfig:
+    name: str
+    kind: Literal["mlp"] = "mlp"
+    enabled: bool = True
+    model: ModelConfig = field(default_factory=lambda: ModelConfig(spec=MLPSpec(input_dim=1, out_dim=1)))
+    criterion: CriterionConfig = field(default_factory=CriterionConfig)
+    data: DataConfig = field(default_factory=DataConfig)
+    optim: OptimizerConfig = field(default_factory=OptimizerConfig)
+    train: TrainConfig = field(default_factory=TrainConfig)

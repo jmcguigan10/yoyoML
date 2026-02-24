@@ -1,0 +1,41 @@
+
+def build_head(
+    *,
+    kind: Literal["linear", "mlp", "identity"],
+    feature_dim: Optional[int],
+    num_classes: Optional[int],
+    hidden_dims: Sequence[int],
+    use_dropout: bool,
+    dropout_p: float,
+    activation: ActivationName,
+) -> nn.Module:
+    if kind == "identity":
+        return nn.Identity()
+
+    if num_classes is None:
+        raise ValueError("num_classes must be set unless head.kind='identity'.")
+
+    if kind == "linear":
+        return nn.Linear(feature_dim, num_classes) if feature_dim is not None else nn.LazyLinear(num_classes)
+
+    if kind == "mlp":
+        dims = list(hidden_dims)
+        if not dims:
+            return nn.Linear(feature_dim, num_classes) if feature_dim is not None else nn.LazyLinear(num_classes)
+
+        layers: List[nn.Module] = []
+        prev = feature_dim
+        for h in dims:
+            if prev is None:
+                layers.append(nn.LazyLinear(h))
+            else:
+                layers.append(nn.Linear(prev, h))  # type: ignore[arg-type]
+            layers.append(make_activation(activation))
+            if use_dropout and dropout_p > 0:
+                layers.append(nn.Dropout(dropout_p))
+            prev = h
+
+        layers.append(nn.Linear(prev, num_classes))  # type: ignore[arg-type]
+        return nn.Sequential(*layers)
+
+    raise ValueError(f"Unknown head kind: {kind}")

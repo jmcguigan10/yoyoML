@@ -1,0 +1,27 @@
+
+class VanillaMLP(nn.Module):
+    """Configurable MLP for tabular / vector inputs."""
+
+    def __init__(self, spec: MLPSpec):
+        super().__init__()
+        self.spec = spec
+
+        dims = [spec.input_dim] + list(spec.hidden_dims) + [spec.out_dim]
+        layers: List[nn.Module] = []
+
+        for i in range(len(dims) - 1):
+            layers.append(nn.Linear(dims[i], dims[i + 1]))
+            is_last = i == len(dims) - 2
+            if not is_last:
+                if spec.use_batch_norm:
+                    layers.append(nn.BatchNorm1d(dims[i + 1]))
+                elif spec.use_layer_norm:
+                    layers.append(nn.LayerNorm(dims[i + 1]))
+                layers.append(make_activation(spec.activation))
+                if spec.use_dropout and spec.dropout_p > 0:
+                    layers.append(nn.Dropout(spec.dropout_p))
+
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)

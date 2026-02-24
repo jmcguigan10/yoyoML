@@ -1,0 +1,19 @@
+def load_config(path: str | Path, cls: Type[T]) -> T:
+    path = Path(path)
+    suffix = path.suffix.lower()
+    if suffix in {".yaml", ".yml"}:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    elif suffix == ".toml":
+        try:  # py3.11+
+            _toml = tomllib  # type: ignore[name-defined]
+        except NameError:  # pragma: no cover
+            _toml = None
+        if _toml is None:
+            try:
+                import tomli as _toml  # type: ignore
+            except ModuleNotFoundError as e:
+                raise RuntimeError("TOML requires Python 3.11+ or 'tomli'") from e
+        raw = _toml.loads(path.read_text(encoding="utf-8"))
+    else:
+        raise ValueError(f"Unsupported config format: {path}")
+    return from_dict(cls, raw or {})

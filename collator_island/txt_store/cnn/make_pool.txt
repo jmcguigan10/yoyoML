@@ -1,0 +1,9 @@
+
+def make_pool(name: PoolName, kernel_size: int, stride: Optional[int] = None) -> nn.Module:
+    if name == "none":
+        return nn.Identity()
+    if name == "max":
+        return nn.MaxPool2d(kernel_size=kernel_size, stride=stride)
+    if name == "avg":
+        return nn.AvgPool2d(kernel_size=kernel_size, stride=stride)
+    raise ValueError(f"Unknown pool: {name}")

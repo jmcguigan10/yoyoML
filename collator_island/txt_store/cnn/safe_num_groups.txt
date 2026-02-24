@@ -1,0 +1,7 @@
+
+def safe_num_groups(channels: int, requested: int) -> int:
+    requested = max(1, min(requested, channels))
+    for g in range(requested, 0, -1):
+        if channels % g == 0:
+            return g
+    return 1

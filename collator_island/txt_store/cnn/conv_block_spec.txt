@@ -1,0 +1,24 @@
+
+@dataclass(frozen=True)
+class ConvBlockSpec:
+    out_channels: int
+    kernel_size: int = 3
+    stride: int = 1
+    padding: str | int = "same"  # "same" | "valid" | int
+    dilation: int = 1
+    groups: int = 1
+
+    # If bias=None: auto disables bias when norm is used (common practice)
+    bias: Optional[bool] = None
+
+    norm: NormName = "batch"
+    num_groups: int = 32  # group norm
+
+    activation: ActivationName = "relu"
+
+    use_dropout: bool = False
+    dropout_p: float = 0.0
+
+    pool: PoolName = "none"
+    pool_kernel: int = 2
+    pool_stride: Optional[int] = None

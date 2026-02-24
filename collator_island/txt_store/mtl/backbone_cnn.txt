@@ -1,0 +1,38 @@
+def build_backbone_cnn(spec: MTLSpec) -> Tuple[nn.Module, nn.Module, nn.Module, Optional[int]]:
+    if spec.cnn_backbone is None:
+        raise ValueError("cnn_backbone must be provided when backbone_kind='cnn'.")
+    b = spec.cnn_backbone
+
+    layers: List[nn.Module] = []
+    c_in = b.in_channels
+    for cb in b.conv_blocks:
+        bias = cb.bias
+        if bias is None:
+            bias = cb.norm == "none"
+        layers.append(
+            nn.Conv2d(
+                in_channels=c_in,
+                out_channels=cb.out_channels,
+                kernel_size=cb.kernel_size,
+                stride=cb.stride,
+                padding=cb.padding,
+                dilation=cb.dilation,
+                groups=cb.groups,
+                bias=bias,
+            )
+        )
+        layers.append(make_norm(cb.norm, cb.out_channels, cb.num_groups))
+        layers.append(make_activation(cb.activation))
+        if cb.use_dropout and cb.dropout_p > 0:
+            layers.append(nn.Dropout2d(cb.dropout_p))
+        if cb.pool != "none":
+            layers.append(make_pool(cb.pool, cb.pool_kernel, cb.pool_stride))
+        c_in = cb.out_channels
+
+    features = nn.Sequential(*layers)
+    global_pool = nn.AdaptiveAvgPool2d((1, 1)) if b.use_global_pool and b.global_pool == "avg" else (
+        nn.AdaptiveMaxPool2d((1, 1)) if b.use_global_pool else nn.Identity()
+    )
+    flatten = nn.Flatten(1)
+    feature_dim: Optional[int] = c_in if b.use_global_pool else None
+    return features, global_pool, flatten, feature_dim

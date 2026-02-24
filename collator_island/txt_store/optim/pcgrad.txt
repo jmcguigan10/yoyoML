@@ -1,0 +1,48 @@
+
+def pcgrad_backward(
+    losses: list[torch.Tensor],
+    params: list[torch.nn.Parameter],
+    *,
+    eps: float = 1e-12,
+    reduction: str = "mean",
+) -> None:
+    """Project conflicting gradients across task losses (PCGrad)."""
+    import random
+
+    params = [p for p in params if p.requires_grad]
+    if not params or not losses:
+        return
+
+    grads: list[list[torch.Tensor]] = []
+    for i, loss in enumerate(losses):
+        g = torch.autograd.grad(
+            loss,
+            params,
+            retain_graph=(i < len(losses) - 1),
+            allow_unused=True,
+        )
+        grads.append([torch.zeros_like(p) if gi is None else gi for gi, p in zip(g, params)])
+
+    order = list(range(len(grads)))
+    random.shuffle(order)
+    for i in order:
+        for j in order:
+            if i == j:
+                continue
+            dot = sum((gi * gj).sum() for gi, gj in zip(grads[i], grads[j]))
+            if float(dot) < 0.0:
+                denom = sum((gj * gj).sum() for gj in grads[j]) + eps
+                coeff = dot / denom
+                grads[i] = [gi - coeff * gj for gi, gj in zip(grads[i], grads[j])]
+
+    merged = [torch.zeros_like(p) for p in params]
+    for g in grads:
+        merged = [m + gi for m, gi in zip(merged, g)]
+
+    if reduction == "mean":
+        scale = 1.0 / max(len(grads), 1)
+        merged = [m * scale for m in merged]
+
+    for p, g in zip(params, merged):
+        p.grad = g
+

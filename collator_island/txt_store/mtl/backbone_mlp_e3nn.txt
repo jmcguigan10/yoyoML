@@ -1,0 +1,54 @@
+
+def build_backbone_mlp(spec: MTLSpec) -> tuple[nn.Module, int]:
+    if spec.mlp_backbone is None:
+        raise ValueError("mlp_backbone is required when backbone_kind='mlp'")
+
+    b = spec.mlp_backbone
+    layers: list[nn.Module] = []
+
+    def _maybe_norm(dim: int) -> list[nn.Module]:
+        out: list[nn.Module] = []
+        if spec.shared_use_batch_norm or b.use_batch_norm:
+            out.append(nn.BatchNorm1d(dim))
+        if spec.shared_use_layer_norm or b.use_layer_norm:
+            out.append(nn.LayerNorm(dim))
+        return out
+
+    in_dim = b.input_dim
+    if b.use_e3nn_first_layer:
+        try:
+            from e3nn import o3  # type: ignore
+        except Exception as e:
+            raise ImportError(
+                "e3nn is required for use_e3nn_first_layer. Install it or disable the flag."
+            ) from e
+
+        irreps_in = o3.Irreps(b.e3nn_in_irreps)
+        irreps_out = o3.Irreps(b.e3nn_out_irreps)
+        if in_dim != irreps_in.dim:
+            raise ValueError(
+                f"input_dim={in_dim} must match Irreps({b.e3nn_in_irreps}).dim={irreps_in.dim}"
+            )
+
+        layers.append(o3.Linear(irreps_in, irreps_out))
+        cur_dim = irreps_out.dim
+        layers += _maybe_norm(cur_dim)
+        layers.append(make_activation(b.activation))
+        if spec.shared_use_dropout or b.use_dropout:
+            layers.append(nn.Dropout(p=b.dropout_p))
+
+        dims = [cur_dim] + list(b.hidden_dims)
+    else:
+        dims = [b.input_dim] + list(b.hidden_dims)
+
+    for i in range(len(dims) - 1):
+        layers.append(nn.Linear(dims[i], dims[i + 1]))
+        layers += _maybe_norm(dims[i + 1])
+        layers.append(make_activation(b.activation))
+        if spec.shared_use_dropout or b.use_dropout:
+            layers.append(nn.Dropout(p=b.dropout_p))
+
+    shared = nn.Sequential(*layers) if layers else nn.Identity()
+    feature_dim = dims[-1] if dims else b.input_dim
+    return shared, feature_dim
+

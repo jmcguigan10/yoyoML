@@ -1,0 +1,29 @@
+def make_dataloader(cfg: PipelineConfig, split: str = "train") -> DataLoader:
+    dcfg = cfg.data
+    base_dataset = make_dataset(cfg, split)
+    n = len(base_dataset)
+    train_n = int(dcfg.train_split * n)
+    val_n = int(dcfg.val_split * n)
+    test_n = n - train_n - val_n
+    splits = torch.utils.data.random_split(
+        base_dataset,
+        lengths=[train_n, val_n, test_n],
+        generator=torch.Generator().manual_seed(dcfg.split_seed),
+    )
+    dataset = {"train": splits[0], "val": splits[1], "test": splits[2]}[split]
+
+    shuffle = bool(dcfg.shuffle) if split == "train" else False
+
+    collate = None
+    if dcfg.collate_module and dcfg.collate_fn:
+        collate = _import_object(dcfg.collate_module, dcfg.collate_fn)
+
+    return DataLoader(
+        dataset,
+        batch_size=dcfg.batch_size,
+        shuffle=shuffle,
+        num_workers=dcfg.num_workers,
+        pin_memory=dcfg.pin_memory,
+        drop_last=dcfg.drop_last,
+        collate_fn=collate,
+    )

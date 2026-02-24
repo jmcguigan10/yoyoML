@@ -1,0 +1,7 @@
+def _infer_task_kind(task_type: str, out_dim: int) -> str:
+    task = task_type.lower()
+    if task in {"classification", "multiclass"}:
+        return "multiclass"
+    if task == "binary":
+        return "binary"
+    return "regression"

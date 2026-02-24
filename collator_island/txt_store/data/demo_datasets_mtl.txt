@@ -1,0 +1,35 @@
+class DemoMTLDataset(Dataset):
+    def __init__(self, spec: Any, *, image_size: int = 64, length: int = 128):
+        self.spec = spec
+        self.length = length
+        self.image_size = image_size
+
+        if spec.backbone_kind == "cnn":
+            if spec.cnn_backbone is None:
+                raise ValueError("cnn_backbone must be set when backbone_kind='cnn'")
+            self.in_channels = spec.cnn_backbone.in_channels
+        else:
+            if spec.mlp_backbone is None:
+                raise ValueError("mlp_backbone must be set when backbone_kind='mlp'")
+            self.input_dim = spec.mlp_backbone.input_dim
+
+    def __len__(self) -> int:
+        return self.length
+
+    def __getitem__(self, idx: int):
+        if self.spec.backbone_kind == "cnn":
+            x = torch.randn(self.in_channels, self.image_size, self.image_size)
+        else:
+            x = torch.randn(self.input_dim)
+
+        targets: Dict[str, torch.Tensor] = {}
+        for t in self.spec.tasks:
+            if t.kind == "multiclass":
+                out_dim = t.out_dim or 2
+                targets[t.name] = torch.randint(0, out_dim, (1,), dtype=torch.long).squeeze(0)
+            elif t.kind == "binary":
+                targets[t.name] = torch.randint(0, 2, (1,), dtype=torch.float32).squeeze(0)
+            else:
+                targets[t.name] = torch.randn(()) if (t.out_dim or 1) == 1 else torch.randn(t.out_dim or 1)
+
+        return x, targets

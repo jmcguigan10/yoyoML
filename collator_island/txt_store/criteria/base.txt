@@ -1,0 +1,10 @@
+
+class Criterion(nn.Module):
+    """Base criterion interface.
+
+    forward() should return a tuple:
+      (loss: torch.Tensor, metrics: Dict[str, torch.Tensor])
+    """
+
+    def forward(self, outputs, targets):  # type: ignore[override]
+        raise NotImplementedError

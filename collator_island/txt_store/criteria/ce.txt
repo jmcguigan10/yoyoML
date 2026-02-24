@@ -1,0 +1,12 @@
+class CrossEntropyCriterion(Criterion):
+    def __init__(self, *, label_smoothing: float = 0.0):
+        super().__init__()
+        self.loss_fn = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+
+    def forward(self, outputs: torch.Tensor, targets: torch.Tensor):
+        if outputs.ndim == 2 and outputs.shape[-1] == 1:
+            outputs = outputs.squeeze(-1)
+        if targets.ndim == 2 and targets.shape[-1] == 1:
+            targets = targets.squeeze(-1)
+        loss = self.loss_fn(outputs, targets)
+        return loss, {"loss": loss.detach()}

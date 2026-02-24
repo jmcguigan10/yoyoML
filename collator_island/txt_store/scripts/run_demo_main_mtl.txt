@@ -1,0 +1,38 @@
+from pathlib import Path
+
+import torch
+
+from config import PipelineConfig, find_pipeline_config, load_config
+from criterion import WeightedSumMTLCriterion
+from data import make_dataloader
+from model import VanillaMTL
+
+
+def main() -> None:
+    root = Path(__file__).resolve().parents[1]
+    cfg = load_config(find_pipeline_config(root), PipelineConfig)
+
+    model = VanillaMTL(cfg.model.spec)
+    criterion = WeightedSumMTLCriterion(
+        task_losses=cfg.criterion.task_losses,
+        weights=cfg.criterion.weights,
+        label_smoothing=cfg.criterion.label_smoothing,
+        pos_weight=cfg.criterion.pos_weight,
+    )
+
+    model.eval()
+    loader = make_dataloader(cfg, split="train")
+    x, y = next(iter(loader))
+
+    with torch.no_grad():
+        out = model(x)
+        loss, metrics = criterion(out, y)
+
+    print("Model:", type(model).__name__)
+    print("Outputs:", {k: tuple(v.shape) for k, v in out.items()})
+    print("Loss:", float(loss))
+    print("Metrics:", {k: float(v) for k, v in metrics.items()})
+
+
+if __name__ == "__main__":
+    main()

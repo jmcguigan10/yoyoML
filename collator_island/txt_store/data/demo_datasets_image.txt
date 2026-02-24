@@ -1,0 +1,18 @@
+class DemoImageDataset(Dataset):
+    def __init__(self, in_channels: int, num_classes: int, *, label_kind: str = "multiclass", size: int = 64, length: int = 128):
+        self.in_channels = in_channels
+        self.num_classes = num_classes
+        self.label_kind = label_kind
+        self.size = size
+        self.length = length
+
+    def __len__(self) -> int:
+        return self.length
+
+    def __getitem__(self, idx: int):
+        x = torch.randn(self.in_channels, self.size, self.size)
+        if self.label_kind == "binary":
+            y = torch.randint(0, 2, (1,), dtype=torch.float32).squeeze(0)
+        else:
+            y = torch.randint(0, self.num_classes, (1,), dtype=torch.long).squeeze(0)
+        return x, y

@@ -1,0 +1,16 @@
+def make_dataset(cfg: PipelineConfig, split: str = "train") -> Dataset:
+    dcfg = cfg.data
+
+    if dcfg.dataset_kind == "custom":
+        if not dcfg.module or not dcfg.class_name:
+            raise ValueError("For dataset_kind='custom', both module and class_name must be set.")
+        cls = _import_object(dcfg.module, dcfg.class_name)
+        return cls(**dcfg.init_args)
+
+    spec = cfg.model.spec
+    task = _infer_task_kind(spec.task_type, spec.out_dim)
+
+    if dcfg.modality == "image":
+        return DemoImageDataset(spec.input_dim, max(spec.out_dim, 2), label_kind=task, size=dcfg.image_size)
+
+    return DemoTabularDataset(spec.input_dim, spec.out_dim, task=task)

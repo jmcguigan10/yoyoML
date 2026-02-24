@@ -1,0 +1,130 @@
+[project]
+name = "demo_project"
+
+[[pipelines]]
+name = "cnn_demo2"
+kind = "cnn"
+enabled = true
+
+[pipelines.model]
+in_channels = 3
+num_classes = 10
+task_type = "multiclass"
+dropout2d = true
+image_size = 64
+
+[[pipelines.model.conv_blocks]]
+out_channels = 32
+kernel_size = 3
+norm = "batch"
+activation = "relu"
+pool = "max"
+use_dropout = false
+
+[[pipelines.model.conv_blocks]]
+out_channels = 64
+kernel_size = 3
+norm = "batch"
+activation = "relu"
+pool = "max"
+use_dropout = true
+dropout_p = 0.1
+
+[pipelines.model.head]
+kind = "mlp"
+hidden_dims = [128]
+use_dropout = true
+dropout_p = 0.2
+use_global_pool = true
+global_pool = "avg"
+
+[pipelines.criterion]
+kind = "cross_entropy"
+label_smoothing = 0.0
+
+[pipelines.data]
+dataset_kind = "demo"
+modality = "image"
+batch_size = 8
+num_workers = 0
+image_size = 64
+
+[[pipelines]]
+name = "mlp_reg_demo"
+kind = "mlp"
+enabled = true
+
+[pipelines.model.spec]
+input_dim = 20
+out_dim = 1
+task_type = "regression"
+hidden_dims = [64, 64]
+activation = "gelu"
+use_dropout = true
+dropout_p = 0.1
+use_layer_norm = true
+
+[pipelines.criterion]
+kind = "mse"
+
+[pipelines.data]
+dataset_kind = "demo"
+modality = "tabular"
+batch_size = 32
+num_workers = 0
+
+[[pipelines]]
+name = "mtl_demo"
+kind = "mtl"
+enabled = true
+
+[pipelines.model.spec]
+backbone_kind = "mlp"
+activation = "relu"
+head_use_dropout = true
+head_dropout_p = 0.1
+
+[pipelines.model.spec.mlp_backbone]
+input_dim = 16
+hidden_dims = [64, 32]
+activation = "relu"
+use_layer_norm = true
+use_dropout = true
+dropout_p = 0.1
+
+[[pipelines.model.spec.tasks]]
+name = "is_fraud"
+kind = "binary"
+hidden_dims = [32]
+
+[[pipelines.model.spec.tasks]]
+name = "bucket"
+kind = "multiclass"
+out_dim = 5
+hidden_dims = []
+
+[[pipelines.model.spec.tasks]]
+name = "amount"
+kind = "regression"
+hidden_dims = [32, 16]
+
+[pipelines.criterion]
+kind = "weighted_mtl"
+label_smoothing = 0.0
+
+[pipelines.criterion.task_losses]
+is_fraud = "bce_with_logits"
+bucket = "cross_entropy"
+amount = "mse"
+
+[pipelines.criterion.weights]
+is_fraud = 1.0
+bucket = 1.0
+amount = 0.5
+
+[pipelines.data]
+dataset_kind = "demo"
+modality = "image"
+batch_size = 16
+num_workers = 0
+image_size = 64

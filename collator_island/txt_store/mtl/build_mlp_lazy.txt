@@ -1,0 +1,37 @@
+
+def build_mlp_lazy(
+    *,
+    in_dim: Optional[int],
+    hidden_dims: Sequence[int],
+    out_dim: int,
+    activation: ActivationName,
+    use_layer_norm: bool,
+    use_batch_norm: bool,
+    use_dropout: bool,
+    dropout_p: float,
+) -> nn.Sequential:
+    """Same as build_mlp, but uses LazyLinear if in_dim is None."""
+    dims = list(hidden_dims) + [out_dim]
+    layers: List[nn.Module] = []
+
+    prev: Optional[int] = in_dim
+    for i, d in enumerate(dims):
+        is_last = i == len(dims) - 1
+
+        if prev is None:
+            layers.append(nn.LazyLinear(d))
+        else:
+            layers.append(nn.Linear(prev, d))
+
+        if not is_last:
+            if use_batch_norm:
+                layers.append(nn.BatchNorm1d(d))
+            elif use_layer_norm:
+                layers.append(nn.LayerNorm(d))
+            layers.append(make_activation(activation))
+            if use_dropout and dropout_p > 0:
+                layers.append(nn.Dropout(dropout_p))
+
+        prev = d
+
+    return nn.Sequential(*layers)

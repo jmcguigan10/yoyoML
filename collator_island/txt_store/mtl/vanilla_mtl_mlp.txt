@@ -1,0 +1,41 @@
+class VanillaMTL(nn.Module):
+    def __init__(self, spec: MTLSpec):
+        super().__init__()
+        if not spec.tasks:
+            raise ValueError("MTLSpec.tasks must contain at least one TaskSpec.")
+        self.spec = spec
+
+        self.shared, self._feature_dim = build_backbone_mlp(spec)
+        self._shared_forward = "mlp"
+
+        heads: Dict[str, nn.Module] = {}
+        for t in spec.tasks:
+            out_dim = t.out_dim
+            if out_dim is None:
+                if t.kind in ("binary", "regression"):
+                    out_dim = 1
+                else:
+                    raise ValueError(f"Task '{t.name}' is multiclass, so out_dim must be set.")
+
+            heads[t.name] = build_mlp_lazy(
+                in_dim=self._feature_dim,
+                hidden_dims=t.hidden_dims,
+                out_dim=out_dim,
+                activation=spec.activation,
+                use_layer_norm=spec.head_use_layer_norm,
+                use_batch_norm=spec.head_use_batch_norm,
+                use_dropout=spec.head_use_dropout,
+                dropout_p=spec.head_dropout_p,
+            )
+
+        self.heads = nn.ModuleDict(heads)
+
+    def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
+        h = self.shared(x)
+        out: Dict[str, torch.Tensor] = {}
+        for t in self.spec.tasks:
+            y = self.heads[t.name](h)
+            if t.kind in ("binary", "regression") and y.ndim > 1:
+                y = y.squeeze(-1)
+            out[t.name] = y
+        return out

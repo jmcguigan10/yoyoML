@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local/contracts/probe_result_bundle.v1.schema.json",
+  "title": "Probe Result Bundle V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "loop_run_id",
+    "round_index",
+    "generated_at_utc",
+    "producer",
+    "source_probe_request_hash",
+    "summary",
+    "results"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "probe_result_bundle.v1"
+    },
+    "run_id": {"type": "string", "minLength": 1},
+    "loop_run_id": {"type": "string", "minLength": 1},
+    "round_index": {"type": "integer", "minimum": 1},
+    "generated_at_utc": {"type": "string", "minLength": 1},
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_probe_request_hash": {"type": "string", "minLength": 1},
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result_count",
+        "success_count",
+        "failed_count",
+        "mean_confidence_gain",
+        "total_trials_run"
+      ],
+      "properties": {
+        "result_count": {"type": "integer", "minimum": 0},
+        "success_count": {"type": "integer", "minimum": 0},
+        "failed_count": {"type": "integer", "minimum": 0},
+        "mean_confidence_gain": {"type": "number"},
+        "total_trials_run": {"type": "integer", "minimum": 0}
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/result"},
+      "default": []
+    }
+  },
+  "$defs": {
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "dataset_id",
+        "status",
+        "probe_kind",
+        "signals",
+        "metrics",
+        "confidence_gain",
+        "trials_run",
+        "runtime_minutes",
+        "artifacts",
+        "error"
+      ],
+      "properties": {
+        "request_id": {"type": "string", "minLength": 1},
+        "dataset_id": {"type": "string", "minLength": 1},
+        "status": {
+          "type": "string",
+          "enum": ["success", "failed", "partial"]
+        },
+        "probe_kind": {"type": "string", "minLength": 1},
+        "signals": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": []
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "confidence_gain": {"type": "number"},
+        "trials_run": {"type": "integer", "minimum": 0},
+        "runtime_minutes": {"type": "number", "minimum": 0},
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "error": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "generated": true,
+    "count": 25
+  },
+  "people": [
+    {
+      "id": 1,
+      "name": "Alan Torvalds",
+      "age": 43,
+      "height_cm": 182.5,
+      "signup_date": "2022-03-16",
+      "is_active": true,
+      "score": 36.569
+    },
+    {
+      "id": 2,
+      "name": "Ada Liskov",
+      "age": 31,
+      "height_cm": 151.9,
+      "signup_date": "2023-03-21",
+      "is_active": false,
+      "score": 6.986
+    },
+    {
+      "id": 3,
+      "name": "Grace Liskov",
+      "age": 45,
+      "height_cm": 153.0,
+      "signup_date": "2023-08-03",
+      "is_active": true,
+      "score": 94.745
+    },
+    {
+      "id": 4,
+      "name": "Guido Lovelace",
+      "age": 54,
+      "height_cm": 179.3,
+      "signup_date": "2022-02-20",
+      "is_active": true,
+      "score": 4.658
+    },
+    {
+      "id": 5,
+      "name": "Linus Hamilton",
+      "age": 44,
+      "height_cm": 157.2,
+      "signup_date": "2022-05-01",
+      "is_active": false,
+      "score": 56.026
+    }
+  ],
+  "stats": {
+    "min_age": 21,
+    "max_age": 61
+  }
+}

@@ -1,0 +1,21 @@
+def build_backbone_mlp(spec: MTLSpec) -> Tuple[nn.Module, Optional[int]]:
+    if spec.mlp_backbone is None:
+        raise ValueError("mlp_backbone must be provided when backbone_kind='mlp'.")
+    b = spec.mlp_backbone
+
+    dims = [b.input_dim] + list(b.hidden_dims)
+    layers: List[nn.Module] = []
+
+    for i in range(len(dims) - 1):
+        layers.append(nn.Linear(dims[i], dims[i + 1]))
+        if spec.shared_use_batch_norm or b.use_batch_norm:
+            layers.append(nn.BatchNorm1d(dims[i + 1]))
+        elif spec.shared_use_layer_norm or b.use_layer_norm:
+            layers.append(nn.LayerNorm(dims[i + 1]))
+        layers.append(make_activation(b.activation))
+        if (spec.shared_use_dropout or b.use_dropout) and (spec.shared_dropout_p or b.dropout_p) > 0:
+            layers.append(nn.Dropout(spec.shared_dropout_p or b.dropout_p))
+
+    shared = nn.Sequential(*layers) if layers else nn.Identity()
+    feature_dim: Optional[int] = dims[-1] if dims else b.input_dim
+    return shared, feature_dim

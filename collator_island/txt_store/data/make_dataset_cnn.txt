@@ -1,0 +1,12 @@
+def make_dataset(cfg: PipelineConfig, split: str = "train") -> Dataset:
+    dcfg = cfg.data
+
+    if dcfg.dataset_kind == "custom":
+        if not dcfg.module or not dcfg.class_name:
+            raise ValueError("For dataset_kind='custom', both module and class_name must be set.")
+        cls = _import_object(dcfg.module, dcfg.class_name)
+        return cls(**dcfg.init_args)
+
+    num_classes = cfg.model.num_classes or 10
+    task = "binary" if cfg.criterion.kind.lower() in {"bce_with_logits", "bce"} else "multiclass"
+    return DemoImageDataset(cfg.model.in_channels, num_classes, label_kind=task, size=cfg.model.image_size)

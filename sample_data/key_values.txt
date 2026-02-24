@@ -1,0 +1,6 @@
+host: localhost
+port: 5432
+user = demo
+password = not_a_real_password
+retries: 3
+timeout_seconds = 10

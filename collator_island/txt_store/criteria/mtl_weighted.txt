@@ -1,0 +1,55 @@
+
+class WeightedSumMTLCriterion(Criterion):
+    """Weighted sum of per-task criteria.
+
+    outputs: Dict[str, Tensor]
+    targets: Dict[str, Tensor]
+    """
+
+    def __init__(
+        self,
+        *,
+        task_losses: Dict[str, str],
+        weights: Optional[Dict[str, float]] = None,
+        label_smoothing: float = 0.0,
+        pos_weight: Optional[float] = None,
+    ):
+        super().__init__()
+        self.weights = weights or {}
+        self.criteria = nn.ModuleDict(
+            {
+                task_name: make_single_task_criterion(
+                    loss_kind,
+                    label_smoothing=label_smoothing,
+                    pos_weight=pos_weight,
+                )
+                for task_name, loss_kind in task_losses.items()
+            }
+        )
+
+    def compute_task_losses(
+        self,
+        outputs: Dict[str, torch.Tensor],
+        targets: Dict[str, torch.Tensor],
+    ) -> Dict[str, torch.Tensor]:
+        losses: Dict[str, torch.Tensor] = {}
+        for task_name, crit in self.criteria.items():
+            loss, _ = crit(outputs[task_name], targets[task_name])
+            losses[task_name] = loss
+        return losses
+
+    def combine_task_losses(
+        self, task_losses: Dict[str, torch.Tensor]
+    ) -> tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        device = next(iter(task_losses.values())).device if task_losses else torch.device("cpu")
+        total = torch.tensor(0.0, device=device)
+        metrics: Dict[str, torch.Tensor] = {}
+        for task_name, loss in task_losses.items():
+            w = float(self.weights.get(task_name, 1.0))
+            total = total + w * loss
+            metrics[f"loss_{task_name}"] = loss.detach()
+        metrics["loss"] = total.detach()
+        return total, metrics
+
+    def forward(self, outputs: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]):
+        return self.combine_task_losses(self.compute_task_losses(outputs, targets))

@@ -1,0 +1,15 @@
+def make_dataset(cfg: PipelineConfig, split: str = "train") -> Dataset:
+    dcfg = cfg.data
+
+    if dcfg.dataset_kind == "custom":
+        if not dcfg.module or not dcfg.class_name:
+            raise ValueError("For dataset_kind='custom', both module and class_name must be set.")
+        cls = _import_object(dcfg.module, dcfg.class_name)
+        return cls(**dcfg.init_args)
+
+    image_size = (
+        cfg.model.spec.cnn_backbone.image_size
+        if cfg.model.spec.backbone_kind == "cnn" and cfg.model.spec.cnn_backbone
+        else dcfg.image_size
+    )
+    return DemoMTLDataset(cfg.model.spec, image_size=image_size)
