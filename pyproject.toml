@@ -5,14 +5,30 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "data-inspector"
 version = "0.1.0"
-description = "Heuristic inspector for common data file formats (prints detected type + structure)."
+description = "Heuristic data inspection and ML-readiness diagnostics for common dataset formats."
 readme = "README.md"
 requires-python = ">=3.9"
+license = "MIT"
+keywords = ["machine learning", "data inspection", "data quality", "dataset diagnostics"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
   "pandas>=1.5",
   "openpyxl>=3.1",
   "PyYAML>=6.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/jmcguigan10/yoyoML"
+Issues = "https://github.com/jmcguigan10/yoyoML/issues"
 
 [project.scripts]
 data-inspector = "data_inspector.cli:main"
